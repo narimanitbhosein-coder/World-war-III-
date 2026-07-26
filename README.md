@@ -1,1 +1,74 @@
-# World-war-III-
+# World-war-III-import os
+from telegram import Update
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from openai import OpenAI
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+OPENAI_KEY = os.getenv("OPENAI_KEY")
+
+client = OpenAI(api_key=OPENAI_KEY)
+
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "🎮 سلام! من دستیار هوشمند بازی هستم.\n\n"
+        "دستورات:\n"
+        "/help - راهنما\n\n"
+        "هر سوالی درباره بازی داری بپرس."
+    )
+
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "📌 راهنمای ربات:\n"
+        "• سوالات استراتژی بازی\n"
+        "• کمک در تصمیم‌گیری\n"
+        "• تحلیل وضعیت بازی\n\n"
+        "سوالت رو بفرست."
+    )
+
+
+async def ai_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_text = update.message.text
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": 
+                    "تو یک دستیار حرفه‌ای برای بازی‌های متنی تلگرام هستی. "
+                    "به بازیکن‌ها کمک کن بهترین تصمیم را بگیرند."
+                },
+                {
+                    "role": "user",
+                    "content": user_text
+                }
+            ]
+        )
+
+        answer = response.choices[0].message.content
+        await update.message.reply_text(answer)
+
+    except Exception as e:
+        await update.message.reply_text(
+            "❌ خطایی رخ داد، بعداً دوباره امتحان کن."
+        )
+
+
+def main():
+    app = Application.builder().token(BOT_TOKEN).build()
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND, ai_answer)
+    )
+
+    print("Bot is running...")
+    app.run_polling()
+
+
+if __name__ == "__main__":
+    main()
